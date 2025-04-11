@@ -1,0 +1,9 @@
+services:
+   server:
+      build:
+        context: .
+      user: "1000:1000"
+      ports:
+        - 6060:6060
+      volumes:
+        - /home/nc/docker/tasky:/database

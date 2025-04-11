@@ -1,0 +1,86 @@
+import yaml
+import os
+import subprocess
+from datetime import date
+from typing import Annotated, Union
+
+from fastapi import Depends, FastAPI, HTTPException, Query
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+from urllib.parse import quote
+from pydantic import BaseModel
+from datetime import datetime, date, time
+from fastapi import FastAPI
+
+app = FastAPI()
+
+DATABASE_USER= 'root'
+DATABASE_PASSWORD= quote('nandu@1998')
+DATABASE_HOST= '192.168.29.195'
+DATABASE_PORT= '3306'
+DATABASE_NAME= 'luttappi'
+
+config_path= 'config.yaml'
+with open(config_path, 'r') as file:
+        config_data = yaml.safe_load(file)
+
+        jobs = [ data for data in config_data['jobs']]
+        db=[ data for data in config_data['sql']]
+class StateResponse(BaseModel):
+    name: str
+    data: str
+    date: date
+
+class Stats(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        name: str
+        data: str
+        date: int | None = None
+
+sql_url= f"mariadb+mariadbconnector://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+engine = create_engine(sql_url)
+
+try:
+        with engine.connect() as connection:
+                    print("Connected to the database successfully!")
+except Exception as e:
+        print(f"Failed to connect to the database: {e}")
+def write_stats(db,job_name,job_data):
+    with Session(engine) as session:
+        statement = Stats(name=job_name,data=job_data)
+        session.add(statement)
+        session.commit()
+        session.close()
+
+@app.get("/stats",response_model=list[StateResponse])
+def readStats():
+    stats=[]
+    with Session(engine) as session:
+        statement = select(Stats)
+        result= session.exec(statement).all()
+        print(result) 
+    return result
+
+@app.get("/update")
+def runStats():
+    for job in jobs:
+        job_name = job['name']
+        job_db = job['db']
+        job_exec_path =  os.path.expandvars(job['path'])
+        job_cmd= job['cmd']
+        try:
+                result = subprocess.run(job_cmd, shell= True, cwd= job_exec_path,
+                capture_output= True, text= True)
+                if result.returncode== 0:
+                        print("Command execute")
+                        print(result.stdout)
+                        #try:
+                        write_stats(job_db,job_name,result.stdout)
+                        #except:
+                        #print("db insertion failed")
+        except subprocess.CalledProcessError as e:
+                return f"Error {e}"
+                
+               
+#    readStats()
+if __name__ == "__main__":
+        uvicorn.run("main:app", host="127.0.0.1", port=5000, log_level="info")

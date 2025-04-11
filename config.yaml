@@ -1,0 +1,14 @@
+---
+base_dir: ''
+sql:
+  - url: ''
+    port: '9090'
+    usr: 'admin'
+    pass: 'test@123'
+jobs: 
+  - types: 'movies'
+    extension: ["mp4","mkv"] 
+    db: 'movies'
+    path:
+       "$HOME/nc/media": "recursive"
+       "$HOME/nc/nas": "none"

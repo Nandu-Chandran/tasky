@@ -1,0 +1,5 @@
+fastapi==0.115.6
+sqlmodel==0.0.22
+uvicorn==0.34.0
+mysql-connector-python==9.1.0
+pyyaml==6.0.2
