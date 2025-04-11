@@ -18,7 +18,16 @@ connect_args= {"check_same_thread": False}
 
 app = FastAPI()
 
-
+class JobScanner:
+    def __init__(self, config_path: str = "config.yaml"):
+        self.config_path = config_path
+        self.jobs = self.load_config()
+    
+    def load_config(self) -> List[Dict]:
+        with open(config_path, 'r') as file:
+         config = yaml.safe_load(file)
+         return config
+    
 def connect_db():
     engine= create_engine(sqlite_url, connect_args= connect_args) 
 
@@ -50,10 +59,6 @@ def get_session():
 SessionDep = Annotated[Session,Depends(get_session)]
 
 
-def load_config():
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-        return config
 
 def write_stats(db,job_name,job_data):
     with Session(engine) as session:
