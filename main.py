@@ -27,7 +27,12 @@ class JobScanner:
         with open(config_path, 'r') as file:
          config = yaml.safe_load(file)
          return config
-        
+    def _find_files(self, path: str, mode: str, extensions: List[str]) -> List[str]:
+        pattern = f"*.{{{','.join(extensions)}}}"
+        if mode == "recursive":
+            return glob.glob(os.path.join(path, "**", pattern), recursive=True)
+        else:
+            return glob.glob(os.path.join(path, pattern))
     
     def _normalize_paths(self, path_data) -> List[Tuple[str, str]]:
         if isinstance(path_data, list):
@@ -38,11 +43,10 @@ class JobScanner:
         
     def scan(self) ->  Dict[str, List[Tuple[str, str, List[str]]]]:
         results={}
-        print(self.jobs["jobs"])
         for job in self.jobs["jobs"]:
-            job_type = job.get['types',"unknown"]
-            extensions= job.get['extension',[]]
-            path_data= job.get['path',[]]
+            job_type = job.get('types',"unknown")
+            extensions= job.get('extension',[])
+            path_data= job.get('path',[])
             paths= self._normalize_paths(path_data)
         
             job_results=[]
@@ -75,24 +79,6 @@ class Stats(SQLModel, table=True):
     date: int | None = None
 
 
-# def create_db_and_tables():
-#     SQLModel.metadata.create_all(engine)
-
-# def get_session():
-#     with Session(engine) as session:
-#         yield session
-
-# SessionDep = Annotated[Session,Depends(get_session)]
-
-
-
-# def write_stats(db,job_name,job_data):
-#     with Session(engine) as session:
-#         statement = Stats(name=job_name,data=job_data)
-#         session.add(statement)
-#         session.commit()
-#         session.close()
-
 def get_file_list(directory:str,searchType:str,filetype:list):
     files_list=[]
 
@@ -106,19 +92,9 @@ def get_file_list(directory:str,searchType:str,filetype:list):
     return files_list
 
 
-# @app.get("/stats",response_model=list[StateResponse])
-# def readStats():
-#     stats=[]
-#     with Session(engine) as session:
-#         statement = select(Stats)
-#         result= session.exec(statement).all()
-#         print(result) 
-#     return result
-
 @app.get("/update")
 def runJobs(config):
     for job in config["jobs"]:
-        print(job)
         types = job['types']
         db_name = job['db']
         extensions= job['extension']
