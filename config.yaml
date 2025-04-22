@@ -12,3 +12,9 @@ jobs:
     path:
        "$HOME/nc/media": "recursive"
        "$HOME/nc/nas": "none"
+  - types: 'music'
+    extension: ["mp3","aac"] 
+    db: 'music'
+    path:
+       "$HOME/nc/media": "recursive"
+       "$HOME/nc/nas": "none"
