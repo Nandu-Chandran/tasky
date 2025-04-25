@@ -10,11 +10,5 @@ jobs:
     extension: ["mp4","mkv"] 
     db: 'movies'
     path:
-       "$HOME/nc/media": "recursive"
-       "$HOME/nc/nas": "none"
-  - types: 'music'
-    extension: ["mp3","aac"] 
-    db: 'music'
-    path:
-       "$HOME/nc/media": "recursive"
-       "$HOME/nc/nas": "none"
+       "/videos": "recursive"
+  

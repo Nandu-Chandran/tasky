@@ -7,3 +7,4 @@ services:
         - 6060:6060
       volumes:
         - /home/nc/docker/tasky:/database
+        - /home/nc/media/video songs:/videos

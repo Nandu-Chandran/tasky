@@ -5,6 +5,7 @@ from datetime import date
 from typing import Annotated, Union,Tuple,List,Dict
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from urllib.parse import quote
 from pydantic import BaseModel
@@ -27,13 +28,19 @@ class JobScanner:
         with open(config_path, 'r') as file:
          config = yaml.safe_load(file)
          return config
+
     def _find_files(self, path: str, mode: str, extensions: List[str]) -> List[str]:
-        pattern = f"*.{{{','.join(extensions)}}}"
-        if mode == "recursive":
-            return glob.glob(os.path.join(path, "**", pattern), recursive=True)
-        else:
-            return glob.glob(os.path.join(path, pattern))
-    
+        matched_files = []
+        recursive = mode == "recursive" 
+
+        for ext in extensions:
+            pattern = f"**/*.{ext}" if recursive else f"*.{ext}"
+            search_path = os.path.join(path, pattern)
+            found = glob.glob(search_path, recursive=recursive)
+            matched_files.extend([os.path.basename(f) for f in found])
+
+        return matched_files 
+
     def _normalize_paths(self, path_data) -> List[Tuple[str, str]]:
         if isinstance(path_data, list):
             return [(os.path.expandvars(p), "default") for p in path_data]
@@ -92,32 +99,12 @@ def get_file_list(directory:str,searchType:str,filetype:list):
     return files_list
 
 
-@app.get("/update")
-def runJobs(config):
-    for job in config["jobs"]:
-        types = job['types']
-        db_name = job['db']
-        extensions= job['extension']
-        
-        paths= job["path"]
-        
-        path_list = (
-                    [(os.path.expandvars(p), "default") for p in paths]
-                    if isinstance(paths, list) 
-                    else [(os.path.expandvars(p), mode) for p, mode in paths.items()] )
-       
-        for path, mode in path_list:
-            print(f"Scanning {path} ({mode}) for {types} files with extensions {extensions}")
-
-# connect_db()      
-# config=load_config()
-# #readStats()
-# runJobs(config)
-
-def main():
+@app.get("/scan")
+def runJobs():
     scanner = JobScanner(config_path="config.yaml")
     results = scanner.scan()
     print(results)
+    return JSONResponse(content=results)
+
 if __name__ == "__main__":
-    # uvicorn.run("main:app", host="127.0.0.1", port=5000, log_level="info")
-    main()
+    uvicorn.run("main:app", host="127.0.0.1", port=5000, log_level="info")
